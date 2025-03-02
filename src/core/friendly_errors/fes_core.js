@@ -23,6 +23,156 @@
  * https://github.com/processing/p5.js/blob/main/contributor_docs/fes_reference_dev_notes.md
  */
 import { translator } from '../internationalization';
+
+
+// p5.js blue, p5.js orange, auto dark green; fallback p5.js darkened magenta
+// See testColors below for all the color codes and names
+const typeColors = ['#2D7BB6', '#EE9900', '#4DB200', '#C83C00'];
+let misusedAtTopLevelCode = null;
+let defineMisusedAtTopLevelCode = null;
+
+// the threshold for the maximum allowed levenshtein distance
+// used in misspelling detection
+const EDIT_DIST_THRESHOLD = 2;
+
+// to enable or disable styling (color, font-size, etc. ) for fes messages
+const ENABLE_FES_STYLING = false;
+
+if (typeof IS_MINIFIED !== 'undefined') {
+  p5._friendlyError =
+    p5._checkForUserDefinedFunctions =
+    p5._fesErrorMonitor =
+    () => {};
+} else {
+  let doFriendlyWelcome = false; // TEMP until we get it all working LM
+
+  const errorTable = require('./browser_errors').default;
+
+  // -- Borrowed from jQuery 1.11.3 --
+  const class2type = {};
+  const toString = class2type.toString;
+  const names = [
+    'Boolean',
+    'Number',
+    'String',
+    'Function',
+    'Array',
+    'Date',
+    'RegExp',
+    'Object',
+    'Error'
+  ];
+  for (let n = 0; n < names.length; n++) {
+    class2type[`[object ${names[n]}]`] = names[n].toLowerCase();
+  }
+  const getType = obj => {
+    if (obj == null) {
+      return `${obj}`;
+    }
+    return typeof obj === 'object' || typeof obj === 'function'
+      ? class2type[toString.call(obj)] || 'object'
+      : typeof obj;
+  };
+
+  // -- End borrow --
+
+  // entry points into user-defined code
+  const entryPoints = [
+    'setup',
+    'draw',
+    'preload',
+    'deviceMoved',
+    'deviceTurned',
+    'deviceShaken',
+    'doubleClicked',
+    'mousePressed',
+    'mouseReleased',
+    'mouseMoved',
+    'mouseDragged',
+    'mouseClicked',
+    'mouseWheel',
+    'touchStarted',
+    'touchMoved',
+    'touchEnded',
+    'keyPressed',
+    'keyReleased',
+    'keyTyped',
+    'windowResized'
+  ];
+
+  const friendlyWelcome = () => {
+    // p5.js brand - magenta: #ED225D
+    //const astrixBgColor = 'transparent';
+    //const astrixTxtColor = '#ED225D';
+    //const welcomeBgColor = '#ED225D';
+    //const welcomeTextColor = 'white';
+    const welcomeMessage = translator('fes.pre', {
+      message: translator('fes.welcome')
+    });
+    console.log(
+      '    _ \n' +
+        ' /\\| |/\\ \n' +
+        " \\ ` ' /  \n" +
+        ' / , . \\  \n' +
+        ' \\/|_|\\/ ' +
+        '\n\n' +
+        welcomeMessage
+    );
+  };
+
+  /**
+   * Takes a message and a p5 function func, and adds a link pointing to
+   * the reference documentation of func at the end of the message
+   *
+   * @method mapToReference
+   * @private
+   * @param {String}  message   the words to be said
+   * @param {String}  [func]    the name of function
+   *
+   * @returns {String}
+   */
+  const mapToReference = (message, func) => {
+    let msgWithReference = '';
+    if (func == null || func.substring(0, 4) === 'load') {
+      msgWithReference = message;
+    } else {
+      const methodParts = func.split('.');
+      const referenceSection =
+        methodParts.length > 1 ? `${methodParts[0]}.${methodParts[1]}` : 'p5';
+
+      const funcName =
+        methodParts.length === 1 ? func : methodParts.slice(2).join('/');
+
+      //Whenever func having p5.[Class] is encountered, we need to have the error link as mentioned below else different link
+      funcName.startsWith('p5.')  ?
+        msgWithReference = `${message} (https://p5js.org/reference/${referenceSection}.${funcName})` :
+        msgWithReference = `${message} (https://p5js.org/reference/${referenceSection}/${funcName})`;
+    }
+    return msgWithReference;
+  };
+
+  /**
+   * Prints out a fancy, colorful message to the console log
+   * Attaches Friendly Errors prefix [fes.pre] to the message.
+   *
+   * @method _report
+   * @private
+   * @param  {String}          message  Message to be printed
+   * @param  {String}          [func]   Name of function
+   * @param  {Number|String}   [color]  CSS color code
+   *
+   * @return console logs
+   */
+  p5._report = (message, func, color) => {
+    // if p5._fesLogger is set ( i.e we are running tests ), use that
+    // instead of console.log
+    const log =
+      p5._fesLogger == null ? console.log.bind(console) : p5._fesLogger;
+
+    if (doFriendlyWelcome) {
+      friendlyWelcome();
+      doFriendlyWelcome = false;
+
 import errorTable from './browser_errors';
 import * as contants from '../constants';
 
@@ -70,6 +220,7 @@ function fesCore(p5, fn){
     ];
     for (let n = 0; n < names.length; n++) {
       class2type[`[object ${names[n]}]`] = names[n].toLowerCase();
+
     }
     const getType = obj => {
       if (obj == null) {

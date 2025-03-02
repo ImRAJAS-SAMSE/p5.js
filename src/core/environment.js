@@ -1440,6 +1440,51 @@ function environment(p5, fn){
       screenPosition = this.createVector(...arguments);
     }
 
+
+/**
+ * Returns the current
+ * <a href="https://developer.mozilla.org/en-US/docs/Learn/Common_questions/Web_mechanics/What_is_a_URL#parameters" target="_blank">URL parameters</a>
+ * in an `Object`.
+ *
+ * For example, calling `getURLParams()` in a sketch hosted at the URL
+ * `https://p5js.org?year=2014&month=May&day=15` returns
+ * `{ year: 2014, month: 'May', day: 15 }`.
+ *
+ * @method getURLParams
+ * @return {Object} URL params
+ * @example
+ * <div class='norender notest'>
+ * <code>
+ * // Imagine this sketch is hosted at the following URL:
+ * // https://p5js.org?year=2014&month=May&day=15
+ *
+ * function setup() {
+ *   background(200);
+ *
+ *   // Get the sketch's URL
+ *   // parameters and display
+ *   // them.
+ *   let params = getURLParams();
+ *   text(params.day, 10, 20);
+ *   text(params.month, 10, 40);
+ *   text(params.year, 10, 60);
+ *
+ *   describe('The text "15", "May", and "2014" written in black on separate lines.');
+ * }
+ * </code>
+ * </div>
+ *
+ * @alt
+ * This example does not render anything.
+ */
+p5.prototype.getURLParams = function() {
+  const re = /[?&]([^&=]+)(?:[&=])([^&=]+)/gim;
+  let m;
+  const v = {};
+  while ((m = re.exec(location.search)) != null) {
+    if (m.index === re.lastIndex) {
+      re.lastIndex++;
+
     const matrix = this._renderer.getWorldToScreenMatrix();
 
     if (screenPosition.dimensions == 2) {
@@ -1447,6 +1492,7 @@ function environment(p5, fn){
       // will result in 0 once converted to world coordinates
       let z = matrix.mat4[14] / matrix.mat4[15];
       screenPosition = this.createVector(screenPosition.x, screenPosition.y, z);
+
     }
 
     const matrixInverse = matrix.invert(matrix);
