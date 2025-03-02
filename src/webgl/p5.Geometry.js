@@ -2020,6 +2020,7 @@ p5.Geometry = class Geometry {
         this._addSegment(begin, end, fromColor, toColor, dir);
       }
 
+
       if (i > 0 && prevEdge[1] === currEdge[0]) {
         if (!connected.has(currEdge[0])) {
           connected.add(currEdge[0]);
@@ -2033,6 +2034,33 @@ p5.Geometry = class Geometry {
           if (lastValidDir && dirOK && dir.dot(lastValidDir) < 1 - 1e-8) {
             this._addJoin(begin, lastValidDir, dir, fromColor);
           }
+
+       
+        const prevColor = (this.vertexStrokeColors.length > 0 && prevEdge)
+            ? this.vertexStrokeColors.slice(prevEdge[1] * 4, (prevEdge[1] + 1) * 4)
+            : [0, 0, 0, 0];
+
+        const fromColor = this.vertexStrokeColors.length > 0
+            ? this.vertexStrokeColors.slice(currEdge[0] * 4, (currEdge[0] + 1) * 4)
+            : [0, 0, 0, 0];
+
+        const toColor = this.vertexStrokeColors.length > 0
+            ? this.vertexStrokeColors.slice(currEdge[1] * 4, (currEdge[1] + 1) * 4)
+            : [0, 0, 0, 0];
+
+        const dir = end.copy().sub(begin).normalize();
+        const dirOK = dir.magSq() > 0;
+
+        // Extract user-defined vertex properties
+        const fromProperties = {};
+        const toProperties = {};
+        for (const prop in this.userVertexProperties) {
+            if (this.userVertexProperties.hasOwnProperty(prop)) {
+                const values = this.userVertexProperties[prop]; 
+                fromProperties[prop] = values[currEdge[0]];
+                toProperties[prop] = values[currEdge[1]];
+            }
+
         }
       } else {
         // Start a new line
